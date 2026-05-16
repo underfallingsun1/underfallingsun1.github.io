@@ -15,17 +15,37 @@
     .sidebar {
       width: 220px;
       background: #fff;
-      padding: 32px 20px;
+      padding: 64px 20px 32px;
       border-right: 1px solid #e0e0e0;
       flex-shrink: 0;
       height: 100vh;
       position: sticky;
       top: 0;
+      transition: margin-left .3s ease;
     }
+    .sidebar.collapsed { margin-left: -220px }
     .sidebar h3 { font-size: 18px; color: #333; margin-bottom: 20px }
     .sidebar a { display: block; color: #0066cc; text-decoration: none; font-size: 15px; padding: 6px 0 }
     .sidebar a:hover { text-decoration: underline }
     .sidebar .back { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e0e0e0 }
+    .toggle {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 10;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: left .3s ease;
+    }
+
     .main {
       flex: 1;
       max-width: 720px;
@@ -34,22 +54,49 @@
     }
     .main h1 { font-size: 28px; color: #333; margin-bottom: 24px; border-bottom: 2px solid #0066cc; padding-bottom: 8px }
     .main h2 { font-size: 22px; color: #333; margin: 32px 0 12px }
+    .main h3 { font-size: 18px; color: #333; margin: 24px 0 8px }
     .main p { font-size: 16px; line-height: 1.8; color: #444; margin-bottom: 16px }
+    .main ul, .main ol { margin: 0 0 16px 24px; font-size: 16px; line-height: 1.8; color: #444 }
+    .main li { margin-bottom: 4px }
+    .main code { background: #e8e8e8; padding: 2px 6px; border-radius: 4px; font-size: 14px }
+    .main pre { background: #2d2d2d; color: #ccc; padding: 16px; border-radius: 8px; overflow-x: auto; margin-bottom: 16px }
+    .main pre code { background: none; padding: 0; color: inherit }
   </style>
 </head>
 <body>
-  <div class="sidebar">
+  <button class="toggle" id="toggle" onclick="toggleSidebar()">☰</button>
+  <div class="sidebar" id="sidebar">
     <div class="back">
       <a href="../index.html">← 返回首页</a>
     </div>
     <h3>所有文章</h3>
-    <a href="index.html">第一篇博客</a>
+    <span style="display:block;font-size:15px;padding:6px 0;color:#999">Dijkstra算法和A*算法</span>
   </div>
-  <div class="main">
-    <h1>第一篇博客</h1>
-    <p>这是我的第一篇博客文章。今天开始学习网页开发，感觉很有趣。</p>
-    <h2>学习收获</h2>
-    <p>学会了 HTML 基础结构、CSS 布局和样式，以及如何用 GitHub Pages 部署个人主页。</p>
-  </div>
+  <div class="main" id="content"></div>
+  <script type="text/markdown" id="md-src">
+# Dijkstra算法和A\*算法
+
+寻路问题是一种常见的算法问题, 其常见描述是从起点到终点
+
+## Dijkstra算法
+
+Dijkstra算法是一种常用的图搜索算法, $\frac{1}{2}$
+```
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script>
+    function toggleSidebar() {
+      const s = document.getElementById('sidebar')
+      const t = document.getElementById('toggle')
+      s.classList.toggle('collapsed')
+    }
+    const src = document.getElementById('md-src').textContent
+    const html = src
+      .replace(/\$\$([\s\S]*?)\$\$/g, (_, t) => katex.renderToString(t.trim(), { displayMode: true, throwOnError: false }))
+      .replace(/\$([^$]*?)\$/g, (_, t) => katex.renderToString(t, { throwOnError: false }))
+    document.getElementById('content').innerHTML = marked.parse(html)
+  </script>
 </body>
 </html>
