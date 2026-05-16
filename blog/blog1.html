@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>博客</title>
+  <title>Dijkstra算法和A*算法</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box }
     body {
@@ -74,14 +74,155 @@
   </div>
   <div class="main" id="content"></div>
   <script type="text/markdown" id="md-src">
-# Dijkstra算法和A\*算法
+# Dijkstra 算法和 A* 算法
 
-寻路问题是一种常见的算法问题, 其常见描述是从起点到终点
+寻路问题是一类经典的算法问题，其目标通常是找到从起点到终点的最短路径（按路程或代价衡量）。  
+一般而言，寻路问题可以这样描述：在图 \((V, E)\) 中，寻找一个边集 \(E_1 \subseteq E\)，使得 \(E_1\) 连接起点 \(S\) 到终点 \(T\)，并且总代价 \(\sum_{e \in E_1} \text{cost}(e)\) 最小。
 
-## Dijkstra算法
+## 1. Dijkstra 算法
 
-Dijkstra算法是一种常用的图搜索算法, $\frac{1}{2}$
+Dijkstra 算法是一种常用的图搜索算法，适用于所有边权非负的图。  
+其核心思路是：从起点出发，每次将当前距离起点最近且尚未处理的节点加入“已知点集”，并更新与之相邻的节点的最短路径长度，直到找到终点，或者没有与已知点集相邻的节点可以再加入为止。
+
+以下是 Dijkstra 算法的 Python 实现示例：
+
+```python
+import sys
+
+def dijkstra_basic(graph, start):
+    distances = {node: float('inf') for node in graph}
+    distances[start] = 0
+    visited = set()
+    predecessors = {node: None for node in graph}
+    
+    while len(visited) < len(graph):
+        # 寻找未访问节点中距离最小的节点
+        min_node = None
+        min_distance = float('inf')
+        for node in graph:
+            if node not in visited and distances[node] < min_distance:
+                min_node = node
+                min_distance = distances[node]
+        
+        if min_node is None:
+            break
+            
+        visited.add(min_node)
+        
+        # 更新相邻节点的距离
+        for neighbor, weight in graph[min_node]:
+            if neighbor not in visited:
+                new_distance = distances[min_node] + weight
+                if new_distance < distances[neighbor]:
+                    distances[neighbor] = new_distance
+                    predecessors[neighbor] = min_node
+    
+    return distances, predecessors
+
+# 辅助函数：重建最短路径
+def get_path(predecessors, start, end):
+    path = []
+    current = end
+    while current is not None:
+        path.insert(0, current)
+        current = predecessors[current]
+    return path if path[0] == start else []
 ```
+
+Dijkstra 算法采用贪心策略，有效减少了计算量。但在某些复杂场景下，它仍然可能遍历整个图。
+
+## 2. A* 算法
+
+A* 算法是对 Dijkstra 算法的一种优化，引入了启发式搜索的思想。  
+A* 算法需要一个额外的估价函数 \(h(x)\)，用于估计当前节点 \(x\) 到终点的距离。在选择下一个扩展节点时，A* 不再只考虑从起点到当前节点的实际距离 \(g(x)\)，而是综合考虑估计的总代价 \(f(x) = g(x) + h(x)\)。
+
+以下是 A* 算法的 Python 实现示例：
+
+```python
+import heapq
+
+def a_star(graph, start, end, heuristic):
+    """
+    graph: 邻接表表示的图，格式为 {node: [(neighbor, cost), ...]}
+    start: 起点
+    end: 终点
+    heuristic: 启发函数 heuristic(node, end) -> 估计代价
+    """
+    open_set = []
+    heapq.heappush(open_set, (0, start))  # (f_score, node)
+    
+    g_score = {node: float('inf') for node in graph}
+    g_score[start] = 0
+    
+    f_score = {node: float('inf') for node in graph}
+    f_score[start] = heuristic(start, end)
+    
+    predecessors = {node: None for node in graph}
+    
+    while open_set:
+        _, current = heapq.heappop(open_set)
+        
+        if current == end:
+            # 到达终点，重建路径
+            path = []
+            while current is not None:
+                path.append(current)
+                current = predecessors[current]
+            path.reverse()
+            return path, g_score[end]
+        
+        for neighbor, cost in graph[current]:
+            tentative_g = g_score[current] + cost
+            
+            if tentative_g < g_score[neighbor]:
+                predecessors[neighbor] = current
+                g_score[neighbor] = tentative_g
+                f_score[neighbor] = tentative_g + heuristic(neighbor, end)
+                heapq.heappush(open_set, (f_score[neighbor], neighbor))
+    
+    return None, float('inf')  # 没有找到路径
+```
+
+一个简单的启发函数示例（曼哈顿距离，适用于网格地图）：
+
+```python
+def manhattan_heuristic(node, end):
+    # 假设节点坐标格式为 (x, y)
+    return abs(node[0] - end[0]) + abs(node[1] - end[1])
+```
+
+使用示例：
+
+```python
+# 定义一个简单的图（网格邻居关系需自行构建）
+graph = {
+    (0,0): [((0,1), 1), ((1,0), 1)],
+    (0,1): [((0,0), 1), ((1,1), 1), ((0,2), 1)],
+    # ... 其他节点
+}
+
+start = (0, 0)
+end = (2, 2)
+path, cost = a_star(graph, start, end, manhattan_heuristic)
+print("路径:", path)
+print("总代价:", cost)
+```
+
+**A* 算法的关键特性：**
+
+- 当启发函数 \(h(x)\) 满足**可采纳性**（即 \(h(x)\) 不会高估实际剩余代价）时，A* 保证找到最优解。
+- 当 \(h(x)\) 还满足**一致性**（三角不等式）时，A* 是高效的，每个节点只会被扩展一次。
+- 如果 \(h(x) = 0\)，A* 退化为 Dijkstra 算法。
+- 如果 \(h(x)\) 始终等于实际剩余代价，A* 将直接沿着最优路径前进，效率最高。
+
+**优缺点总结：**
+
+在 \(h(x)\) 设计合理的前提下，A* 算法在大多数场景中表现优于 Dijkstra 算法，因此在路径规划、游戏开发、机器人导航等领域得到了广泛应用。
+
+不过，A* 算法也有一些局限性：
+
+- 在某些特定场景下（例如启发函数始终为 0），A* 会退化到 Dijkstra 算法，甚至可能因启发函数计算开销而比 Dijkstra 更慢。
+- 如果启发函数设计不当（如高估实际距离），A* 算法可能无法保证找到最优解。
   </script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
